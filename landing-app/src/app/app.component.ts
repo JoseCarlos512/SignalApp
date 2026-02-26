@@ -16,7 +16,7 @@ interface ChatMessage {
   templateUrl: './app.component.html'
 })
 export class AppComponent {
-  apiUrl = 'http://localhost:5000';
+  apiUrl = 'http://localhost:5100';
   applicant = { name: '', dni: '', phone: '', email: '' };
   message = '';
   messages: ChatMessage[] = [];
