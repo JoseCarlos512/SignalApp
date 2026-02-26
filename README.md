@@ -29,14 +29,14 @@ Estructura simplificada:
 
 ### Backend landing (`landing-backend`)
 
-Implementa un BFF liviano para landing usando YARP:
+Implementa un backend dedicado para landing:
 
-- expone solo endpoints de landing:
+- `LandingChatsController` expone endpoints propios para landing:
   - `POST /api/chats/session`
   - `GET /api/chats/{sessionId}`
   - `POST /api/chats/{sessionId}/messages`
-  - `/hubs/chat` (SignalR / WebSocket)
-- reenvía todo a `chat-backend` (`http://localhost:5000`).
+- esos endpoints llaman a `chat-backend` vía `HttpClient` (base URL configurable).
+- YARP se usa para enrutar `/hubs/chat` (SignalR / WebSocket) hacia `chat-backend`.
 
 ### Frontend Landing (`landing-app`)
 
