@@ -1,0 +1,45 @@
+<div class="container">
+  <h1>Backoffice - Bandeja de Chats</h1>
+
+  @if (!token) {
+  <div class="card">
+    <h3>Login (JWT mock)</h3>
+    <input [(ngModel)]="username" placeholder="Usuario" />
+    <input [(ngModel)]="password" placeholder="Password" type="password" />
+    <button (click)="login()">Ingresar</button>
+  </div>
+  }
+
+  @if (token) {
+  <button (click)="toggleActive()">{{ isActive ? 'Estoy activo ✅' : 'Estoy inactivo' }}</button>
+  <button (click)="loadPendingChats()">Refrescar chats</button>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Chats pendientes</h3>
+      <ul>
+        @for (chat of pendingChats; track chat.id) {
+        <li>
+          <strong>{{ chat.applicant.name }}</strong> - {{ chat.applicant.dni }}
+          <button (click)="takeChat(chat.id)">Tomar chat</button>
+        </li>
+        }
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Chat activo</h3>
+      @if (!selectedChatId) { <p>Selecciona un chat para responder.</p> }
+      @if (selectedChatId) {
+      <div class="chat-box">
+        @for (msg of messages; track msg.sentAt + msg.text) {
+        <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
+        }
+      </div>
+      <input [(ngModel)]="message" placeholder="Escribe respuesta" />
+      <button (click)="sendMessage()">Enviar</button>
+      }
+    </div>
+  </div>
+  }
+</div>
