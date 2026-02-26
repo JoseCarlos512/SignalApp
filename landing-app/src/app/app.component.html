@@ -1,0 +1,30 @@
+<div class="container">
+  <h1>Postula como Cajero Corresponsal</h1>
+  <p>Completa el formulario de postulación y conversa con un asesor en línea.</p>
+
+  <button (click)="openAdvisorChat()">Hablar con un asesor</button>
+
+  @if (showModal) {
+  <div class="modal">
+    <h3>Datos para iniciar chat</h3>
+    <input [(ngModel)]="applicant.name" placeholder="Nombre" />
+    <input [(ngModel)]="applicant.dni" placeholder="DNI" />
+    <input [(ngModel)]="applicant.phone" placeholder="Teléfono" />
+    <input [(ngModel)]="applicant.email" placeholder="Email" />
+    <button (click)="createSession()">Iniciar chat</button>
+  </div>
+  }
+
+  @if (sessionId) {
+  <p><strong>{{ statusMessage }}</strong></p>
+
+  <div class="chat-box">
+    @for (msg of messages; track msg.sentAt + msg.text) {
+    <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
+    }
+  </div>
+
+  <input [(ngModel)]="message" placeholder="Escribe tu mensaje" />
+  <button (click)="sendMessage()">Enviar</button>
+  }
+</div>
