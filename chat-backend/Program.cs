@@ -1,14 +1,18 @@
 using System.Text;
+using ChatBackend.Data;
 using ChatBackend.Hubs;
 using ChatBackend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<IChatService, InMemoryChatService>();
+builder.Services.AddDbContext<ChatDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ChatDatabase")));
+builder.Services.AddScoped<IChatService, InMemoryChatService>();
 
 builder.Services.AddCors(options =>
 {
@@ -56,6 +60,12 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
