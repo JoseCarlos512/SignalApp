@@ -4,7 +4,7 @@ Este repositorio contiene un ejemplo **simple pero completo** para demostrar un 
 
 - `landing-app` (Angular, sin login)
 - `backoffice-app` (Angular, login JWT mock)
-- `chat-backend` (.NET 8 + SignalR + JWT + memoria)
+- `chat-backend` (.NET 8 + SignalR + JWT + SQL Server)
 - `landing-backend` (.NET 8 + YARP, BFF/proxy para landing)
 
 ## Arquitectura
@@ -21,7 +21,7 @@ Estructura simplificada:
   - `AuthController`: login JWT mock para backoffice.
   - `ChatController`: endpoints REST de sesión, pendientes, estado asesor, tomar chat y mensajes.
 - `Services/`
-  - `InMemoryChatService`: estado en memoria de chats y asesores.
+  - `InMemoryChatService`: persistencia en SQL Server de chats, postulantes, mensajes y estado de asesores.
 - `Hubs/`
   - `ChatHub`: canal real-time de SignalR (grupos por chat + grupo asesores).
 - `Models/`
@@ -126,7 +126,7 @@ Abrir: `http://localhost:4300`
 
 ## Consideraciones de demo
 
-- Persistencia en memoria (se pierde al reiniciar backend principal).
+- Persistencia en SQL Server (cadena `ConnectionStrings:ChatDatabase`) para chats, mensajes, postulantes y estado de asesores.
 - JWT solo para endpoints de backoffice.
 - Login mock intencional para simplificar.
 - Diseño orientado a comprensión y adaptación rápida.
