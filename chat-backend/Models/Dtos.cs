@@ -6,3 +6,4 @@ public record SendMessageRequest(string SenderType, string SenderId, string Text
 public record ToggleAdvisorStatusRequest(bool IsActive);
 public record LoginRequest(string Username, string Password);
 public record LoginResponse(string Token, string AdvisorId, string AdvisorName);
+public record CloseChatRequest(string ClosedBy, string? Reason);

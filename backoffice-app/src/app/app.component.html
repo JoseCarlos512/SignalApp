@@ -37,7 +37,10 @@
         }
       </div>
       <input [(ngModel)]="message" placeholder="Escribe respuesta" />
-      <button (click)="sendMessage()">Enviar</button>
+      <div class="chat-actions">
+        <button (click)="sendMessage()">Enviar</button>
+        <button class="danger" (click)="closeChat()">Cerrar chat</button>
+      </div>
       }
     </div>
   </div>

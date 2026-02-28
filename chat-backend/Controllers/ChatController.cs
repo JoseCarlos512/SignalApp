@@ -73,6 +73,30 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
         return Ok(chat);
     }
 
+
+    [HttpPost("{sessionId:guid}/close")]
+    public async Task<IActionResult> CloseChat(Guid sessionId, [FromBody] CloseChatRequest request)
+    {
+        var closedBy = string.IsNullOrWhiteSpace(request.ClosedBy) ? "usuario" : request.ClosedBy;
+        var chat = chatService.CloseChat(sessionId, closedBy, request.Reason);
+
+        if (chat is null)
+        {
+            return NotFound("Chat no encontrado o ya cerrado.");
+        }
+
+        var room = $"chat-{sessionId}";
+        await hubContext.Clients.Group(room).SendAsync("chatClosed", new
+        {
+            sessionId,
+            closedBy,
+            reason = request.Reason
+        });
+
+        await hubContext.Clients.Group(room).SendAsync("newMessage", chat.Messages.Last());
+        return Ok(chat);
+    }
+
     [HttpGet("{sessionId:guid}")]
     public ActionResult<ChatSession> GetSession(Guid sessionId)
     {

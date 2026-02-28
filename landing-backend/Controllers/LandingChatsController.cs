@@ -28,4 +28,11 @@ public class LandingChatsController(IChatBackendClient chatBackendClient) : Cont
         var message = await chatBackendClient.SendMessageAsync(sessionId, request, cancellationToken);
         return message is null ? NotFound() : Ok(message);
     }
+
+    [HttpPost("{sessionId:guid}/close")]
+    public async Task<ActionResult<ChatSession>> CloseChat(Guid sessionId, [FromBody] CloseChatRequest request, CancellationToken cancellationToken)
+    {
+        var chat = await chatBackendClient.CloseChatAsync(sessionId, request, cancellationToken);
+        return chat is null ? NotFound() : Ok(chat);
+    }
 }
