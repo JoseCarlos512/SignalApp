@@ -43,4 +43,16 @@ public class ChatBackendClient(HttpClient httpClient, IConfiguration configurati
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ChatMessage>(cancellationToken: cancellationToken);
     }
+
+    public async Task<ChatSession?> CloseChatAsync(Guid sessionId, CloseChatRequest request, CancellationToken cancellationToken)
+    {
+        var response = await httpClient.PostAsJsonAsync($"{_baseUrl}/api/chats/{sessionId}/close", request, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ChatSession>(cancellationToken: cancellationToken);
+    }
 }

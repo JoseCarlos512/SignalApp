@@ -80,6 +80,32 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         return ToModel(chat);
     }
 
+    public ChatSession? CloseChat(Guid sessionId, string closedBy, string? reason = null)
+    {
+        var chat = dbContext.Sessions
+            .Include(s => s.Messages)
+            .FirstOrDefault(s => s.Id == sessionId);
+
+        if (chat is null || chat.Status == ChatStatus.Closed)
+        {
+            return null;
+        }
+
+        chat.Status = ChatStatus.Closed;
+        chat.Messages.Add(new ChatMessageEntity
+        {
+            SessionId = chat.Id,
+            SenderType = "system",
+            SenderId = "system",
+            Text = string.IsNullOrWhiteSpace(reason)
+                ? $"Chat cerrado por {closedBy}."
+                : $"Chat cerrado por {closedBy}. Motivo: {reason}"
+        });
+
+        dbContext.SaveChanges();
+        return ToModel(chat);
+    }
+
     public void SetAdvisorActive(string advisorId, string advisorName, bool isActive)
     {
         var advisor = dbContext.Advisors.FirstOrDefault(a => a.AdvisorId == advisorId);
@@ -114,8 +140,11 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
 
     public ChatMessage? AddMessage(Guid sessionId, string senderType, string senderId, string text)
     {
-        var chatExists = dbContext.Sessions.Any(s => s.Id == sessionId);
-        if (!chatExists)
+        var chat = dbContext.Sessions
+            .AsNoTracking()
+            .FirstOrDefault(s => s.Id == sessionId);
+
+        if (chat is null || chat.Status == ChatStatus.Closed)
         {
             return null;
         }

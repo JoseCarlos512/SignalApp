@@ -9,6 +9,7 @@ public interface IChatService
     IReadOnlyCollection<ChatSession> GetPendingChats();
     ChatSession? GetChat(Guid sessionId);
     ChatSession? TakeChat(Guid sessionId, string advisorId);
+    ChatSession? CloseChat(Guid sessionId, string closedBy, string? reason = null);
     void SetAdvisorActive(string advisorId, string advisorName, bool isActive);
     IReadOnlyCollection<AdvisorState> GetAdvisors();
     ChatMessage? AddMessage(Guid sessionId, string senderType, string senderId, string text);

@@ -1,5 +1,121 @@
-body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; }
-.container { max-width: 800px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
-input, button { padding: 8px; margin: 4px 0; width: 100%; }
-.chat-box { border: 1px solid #ddd; padding: 10px; height: 250px; overflow-y: auto; background: #fafafa; }
-.modal { border: 1px solid #ccc; border-radius: 6px; padding: 12px; margin-top: 10px; background: #f0f7ff; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: linear-gradient(180deg, #eef4ff, #f7f9ff);
+}
+
+.landing-container {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.application-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(18, 40, 76, 0.08);
+  padding: 20px;
+}
+
+.step-indicator {
+  color: #3048a0;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+input,
+textarea,
+button {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: 1px solid #d2d8e6;
+  box-sizing: border-box;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+button {
+  background: #1f3e9b;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ok-message {
+  color: #0f7a43;
+}
+
+.chat-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  font-size: 24px;
+  z-index: 50;
+}
+
+.chat-widget {
+  position: fixed;
+  right: 18px;
+  bottom: 84px;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  z-index: 60;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #1f3e9b;
+  color: #fff;
+}
+
+.close-icon {
+  width: 32px;
+  margin: 0;
+  padding: 4px;
+  background: transparent;
+  color: #fff;
+  border: none;
+}
+
+.chat-body {
+  padding: 12px;
+}
+
+.chat-box {
+  border: 1px solid #e0e4f0;
+  border-radius: 8px;
+  padding: 10px;
+  height: 180px;
+  overflow-y: auto;
+  background: #f9fbff;
+  margin-bottom: 8px;
+}
+
+.danger {
+  background: #a3213f;
+}

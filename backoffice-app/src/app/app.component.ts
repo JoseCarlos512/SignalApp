@@ -60,6 +60,14 @@ export class AppComponent {
       this.messages = [...this.messages, message];
     });
 
+    this.hubConnection.on('chatClosed', async () => {
+      if (this.selectedChatId) {
+        const session = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}`);
+        const data = await session.json();
+        this.messages = data.messages ?? [];
+      }
+    });
+
     await this.hubConnection.start();
   }
 
@@ -91,6 +99,23 @@ export class AppComponent {
 
     await this.hubConnection?.invoke('JoinChatRoom', `chat-${chatId}`);
     const session = await fetch(`${this.apiUrl}/api/chats/${chatId}`);
+    const data = await session.json();
+    this.messages = data.messages ?? [];
+    await this.loadPendingChats();
+  }
+
+  async closeChat() {
+    if (!this.selectedChatId) return;
+    await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        closedBy: 'asesor',
+        reason: 'Cierre desde backoffice'
+      })
+    });
+
+    const session = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}`);
     const data = await session.json();
     this.messages = data.messages ?? [];
     await this.loadPendingChats();

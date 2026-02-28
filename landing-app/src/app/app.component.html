@@ -1,30 +1,83 @@
-<div class="container">
-  <h1>Postula como Cajero Corresponsal</h1>
-  <p>Completa el formulario de postulación y conversa con un asesor en línea.</p>
+<div class="landing-container">
+  <header>
+    <h1>Postulación Comercial</h1>
+    <p>Completa los pasos para enviar tu postulación.</p>
+  </header>
 
-  <button (click)="openAdvisorChat()">Hablar con un asesor</button>
+  <section class="application-card">
+    <div class="step-indicator">Paso {{ currentStep }} de {{ totalSteps }}</div>
 
-  @if (showModal) {
-  <div class="modal">
-    <h3>Datos para iniciar chat</h3>
-    <input [(ngModel)]="applicant.name" placeholder="Nombre" />
-    <input [(ngModel)]="applicant.dni" placeholder="DNI" />
-    <input [(ngModel)]="applicant.phone" placeholder="Teléfono" />
-    <input [(ngModel)]="applicant.email" placeholder="Email" />
-    <button (click)="createSession()">Iniciar chat</button>
-  </div>
-  }
-
-  @if (sessionId) {
-  <p><strong>{{ statusMessage }}</strong></p>
-
-  <div class="chat-box">
-    @for (msg of messages; track msg.sentAt + msg.text) {
-    <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
+    @if (currentStep === 1) {
+      <h3>Datos personales</h3>
+      <input [(ngModel)]="postulation.fullName" placeholder="Nombres y apellidos" />
+      <input [(ngModel)]="postulation.dni" placeholder="DNI" />
+      <input [(ngModel)]="postulation.phone" placeholder="Teléfono" />
+      <input [(ngModel)]="postulation.email" placeholder="Correo" />
     }
-  </div>
 
-  <input [(ngModel)]="message" placeholder="Escribe tu mensaje" />
-  <button (click)="sendMessage()">Enviar</button>
-  }
+    @if (currentStep === 2) {
+      <h3>Ubicación y disponibilidad</h3>
+      <input [(ngModel)]="postulation.city" placeholder="Ciudad" />
+      <input [(ngModel)]="postulation.district" placeholder="Distrito" />
+      <input [(ngModel)]="postulation.availability" placeholder="Disponibilidad horaria" />
+    }
+
+    @if (currentStep === 3) {
+      <h3>Experiencia</h3>
+      <textarea [(ngModel)]="postulation.experience" placeholder="Cuéntanos tu experiencia"></textarea>
+      @if (postulationSent) {
+        <p class="ok-message">✅ Postulación enviada correctamente.</p>
+      }
+    }
+
+    <div class="actions-row">
+      <button (click)="previousStep()" [disabled]="currentStep === 1">Anterior</button>
+      @if (currentStep < totalSteps) {
+        <button (click)="nextStep()">Siguiente</button>
+      }
+      @if (currentStep === totalSteps) {
+        <button (click)="submitPostulation()">Enviar postulación</button>
+      }
+    </div>
+  </section>
 </div>
+
+<button class="chat-fab" (click)="openChatWidget()" aria-label="Abrir chat">💬</button>
+
+@if (isChatOpen) {
+  <aside class="chat-widget">
+    <div class="chat-header">
+      <strong>Chat con asesor</strong>
+      <button class="close-icon" (click)="closeChatWidget()">✕</button>
+    </div>
+
+    @if (!isChatStarted) {
+      <div class="chat-body">
+        <p>Antes de iniciar el chat, completa tus datos:</p>
+        <input [(ngModel)]="applicant.name" placeholder="Nombre" />
+        <input [(ngModel)]="applicant.dni" placeholder="DNI" />
+        <input [(ngModel)]="applicant.phone" placeholder="Teléfono" />
+        <input [(ngModel)]="applicant.email" placeholder="Email" />
+        <button (click)="createSession()">Iniciar chat</button>
+      </div>
+    }
+
+    @if (isChatStarted) {
+      <div class="chat-body">
+        <p><strong>{{ statusMessage }}</strong></p>
+
+        <div class="chat-box">
+          @for (msg of messages; track msg.sentAt + msg.text) {
+            <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
+          }
+        </div>
+
+        <input [(ngModel)]="message" placeholder="Escribe tu mensaje" [disabled]="isChatClosed" />
+        <div class="actions-row">
+          <button (click)="sendMessage()" [disabled]="isChatClosed">Enviar</button>
+          <button class="danger" (click)="closeChat()" [disabled]="isChatClosed">Cerrar chat</button>
+        </div>
+      </div>
+    }
+  </aside>
+}

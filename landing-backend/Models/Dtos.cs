@@ -3,6 +3,7 @@ namespace LandingBackend.Models;
 public record CreateChatSessionRequest(string Name, string Dni, string Phone, string Email);
 public record CreateChatSessionResponse(Guid SessionId, string StatusMessage, bool AdvisorsAvailable);
 public record SendMessageRequest(string SenderType, string SenderId, string Text);
+public record CloseChatRequest(string ClosedBy, string? Reason);
 
 public class ChatMessage
 {

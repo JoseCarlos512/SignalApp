@@ -17,16 +17,56 @@ interface ChatMessage {
 })
 export class AppComponent {
   apiUrl = 'http://localhost:5100';
+
+  // Formulario de postulación (landing)
+  currentStep = 1;
+  totalSteps = 3;
+  postulation = {
+    fullName: '',
+    dni: '',
+    phone: '',
+    email: '',
+    city: '',
+    district: '',
+    availability: '',
+    experience: ''
+  };
+  postulationSent = false;
+
+  // Chat flotante
+  isChatOpen = false;
+  isChatStarted = false;
+  isChatClosed = false;
+  statusMessage = '';
+  sessionId = '';
   applicant = { name: '', dni: '', phone: '', email: '' };
   message = '';
   messages: ChatMessage[] = [];
-  sessionId = '';
-  showModal = false;
-  statusMessage = '';
+
   private hubConnection?: signalR.HubConnection;
 
-  async openAdvisorChat() {
-    this.showModal = true;
+  nextStep() {
+    if (this.currentStep < this.totalSteps) {
+      this.currentStep++;
+    }
+  }
+
+  previousStep() {
+    if (this.currentStep > 1) {
+      this.currentStep--;
+    }
+  }
+
+  submitPostulation() {
+    this.postulationSent = true;
+  }
+
+  openChatWidget() {
+    this.isChatOpen = true;
+  }
+
+  closeChatWidget() {
+    this.isChatOpen = false;
   }
 
   async createSession() {
@@ -39,7 +79,8 @@ export class AppComponent {
     const data = await response.json();
     this.sessionId = data.sessionId;
     this.statusMessage = data.statusMessage;
-    this.showModal = false;
+    this.isChatStarted = true;
+    this.isChatClosed = false;
     await this.connectSignalR();
   }
 
@@ -49,8 +90,13 @@ export class AppComponent {
       .withAutomaticReconnect()
       .build();
 
-    this.hubConnection.on('newMessage', (message: ChatMessage) => {
-      this.messages = [...this.messages, message];
+    this.hubConnection.on('newMessage', (chatMessage: ChatMessage) => {
+      this.messages = [...this.messages, chatMessage];
+    });
+
+    this.hubConnection.on('chatClosed', () => {
+      this.isChatClosed = true;
+      this.statusMessage = 'El chat fue cerrado. Puedes abrir uno nuevo cuando quieras.';
     });
 
     await this.hubConnection.start();
@@ -61,8 +107,24 @@ export class AppComponent {
     this.messages = chatData.messages ?? [];
   }
 
+  async closeChat(by: 'postulante' | 'asesor' = 'postulante') {
+    if (!this.sessionId || this.isChatClosed) return;
+
+    await fetch(`${this.apiUrl}/api/chats/${this.sessionId}/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        closedBy: by === 'asesor' ? 'asesor' : 'postulante',
+        reason: 'Cierre manual del chat'
+      })
+    });
+
+    this.isChatClosed = true;
+    this.statusMessage = 'Chat cerrado correctamente.';
+  }
+
   async sendMessage() {
-    if (!this.message.trim()) return;
+    if (!this.message.trim() || !this.sessionId || this.isChatClosed) return;
     await fetch(`${this.apiUrl}/api/chats/${this.sessionId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
