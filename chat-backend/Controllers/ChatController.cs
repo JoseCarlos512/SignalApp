@@ -40,7 +40,11 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
 
     [Authorize]
     [HttpGet]
-    public ActionResult<IReadOnlyCollection<ChatSession>> GetAllChats() => Ok(chatService.GetAllChats());
+    public ActionResult<IReadOnlyCollection<ChatSession>> GetAllChats()
+    {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        return Ok(chatService.GetAllChats(advisorId));
+    }
 
 
     [Authorize]
@@ -104,12 +108,13 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
             return BadRequest("Debes indicar el asesor destino.");
         }
 
+        var sourceAdvisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var advisorName = User.FindFirstValue(ClaimTypes.Name) ?? "asesor";
-        var chat = chatService.TransferChat(sessionId, request.TargetAdvisorId, advisorName, request.Reason);
+        var chat = chatService.TransferChat(sessionId, sourceAdvisorId, request.TargetAdvisorId, advisorName, request.Reason);
 
         if (chat is null)
         {
-            return NotFound("Chat no encontrado o cerrado.");
+            return Conflict("No se pudo derivar. Verifica que el chat siga asignado a tu usuario y que el asesor destino esté activo.");
         }
 
         await hubContext.Clients.Group("advisors").SendAsync("chatUpdated", new
