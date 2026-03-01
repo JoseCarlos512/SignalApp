@@ -64,13 +64,6 @@
                   </span>
                 </td>
                 <td>{{ advisorDisplayName(chat.assignedAdvisorId) }}</td>
-                <td>
-                  @if (canTakeChat(chat)) {
-                    <button type="button" (click)="takeChat(chat.id); $event.stopPropagation()">Tomar chat</button>
-                  } @else {
-                    <span>-</span>
-                  }
-                </td>
               </tr>
             }
           </tbody>

@@ -68,12 +68,21 @@ export class AppComponent {
     return this.advisors.filter((advisor) => advisor.isActive && advisor.advisorId !== this.advisorId);
   }
 
-  canTakeChat(chat?: Pick<ChatSession, 'status'>): boolean {
-    return chat?.status === 'Pending';
+  get canTakeSelectedChat(): boolean {
+    return !!this.selectedChatId && this.selectedChat?.status === 'Pending';
   }
 
-  get canTakeSelectedChat(): boolean {
-    return this.canTakeChat(this.selectedChat);
+  advisorDisplayName(advisorId?: string): string {
+    if (!advisorId) {
+      return '-';
+    }
+
+    const advisor = this.advisors.find((item) => item.advisorId === advisorId);
+    return advisor ? `${advisor.name} (${advisor.advisorId})` : advisorId;
+  }
+
+  get activeTransferAdvisors(): AdvisorState[] {
+    return this.advisors.filter((advisor) => advisor.isActive && advisor.advisorId !== this.advisorId);
   }
 
   advisorDisplayName(advisorId?: string): string {
