@@ -77,18 +77,10 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
             return null;
         }
 
-        var chat = dbContext.Sessions
-            .Include(s => s.Messages)
-            .FirstOrDefault(s => s.Id == sessionId);
-
-        if (chat is null)
+        // Insertar mensaje directamente sin cargar la sesión
+        dbContext.Messages.Add(new ChatMessageEntity
         {
-            return null;
-        }
-
-        chat.Messages.Add(new ChatMessageEntity
-        {
-            SessionId = chat.Id,
+            SessionId = sessionId,
             SenderType = "system",
             SenderId = "system",
             Text = "Asesor conectado al chat."
@@ -96,7 +88,13 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
 
         dbContext.SaveChanges();
 
-        return ToModel(chat);
+        // Ahora sí cargar todo limpio sin tracking
+        return dbContext.Sessions
+            .AsNoTracking()
+            .Include(s => s.Messages)
+            .Where(s => s.Id == sessionId)
+            .Select(s => ToModel(s))
+            .FirstOrDefault();
     }
 
     public ChatSession? TransferChat(Guid sessionId, string sourceAdvisorId, string targetAdvisorId, string transferBy, string? reason = null)
@@ -110,7 +108,9 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         }
 
         var rowsAffected = dbContext.Sessions
-            .Where(s => s.Id == sessionId && s.Status == ChatStatus.Assigned && s.AssignedAdvisorId == sourceAdvisorId)
+            .Where(s => s.Id == sessionId
+                && s.Status == ChatStatus.Assigned
+                && s.AssignedAdvisorId == sourceAdvisorId)
             .ExecuteUpdate(s => s
                 .SetProperty(p => p.AssignedAdvisorId, targetAdvisorId));
 
@@ -119,18 +119,10 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
             return null;
         }
 
-        var chat = dbContext.Sessions
-            .Include(s => s.Messages)
-            .FirstOrDefault(s => s.Id == sessionId);
-
-        if (chat is null)
+        // 🔥 Insertar mensaje directamente
+        dbContext.Messages.Add(new ChatMessageEntity
         {
-            return null;
-        }
-
-        chat.Messages.Add(new ChatMessageEntity
-        {
-            SessionId = chat.Id,
+            SessionId = sessionId,
             SenderType = "system",
             SenderId = "system",
             Text = string.IsNullOrWhiteSpace(reason)
@@ -140,7 +132,14 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
 
         dbContext.SaveChanges();
 
-        return ToModel(chat);
+        // 🔥 Luego leer limpio
+        return dbContext.Sessions
+            .AsNoTracking()
+            .Include(s => s.Messages)
+            .Where(s => s.Id == sessionId)
+            .Select(s => ToModel(s))
+            .FirstOrDefault();
+
     }
 
     public ChatSession? CloseChat(Guid sessionId, string closedBy, string? reason = null)
