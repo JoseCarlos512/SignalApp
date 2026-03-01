@@ -39,11 +39,14 @@ export class AppComponent {
   isChatClosed = false;
   statusMessage = '';
   sessionId = '';
+  isAdvisorTyping = false;
   applicant = { name: '', dni: '', phone: '', email: '' };
   message = '';
   messages: ChatMessage[] = [];
 
   private hubConnection?: signalR.HubConnection;
+  private typingTimeout?: ReturnType<typeof setTimeout>;
+  private stopTypingTimeout?: ReturnType<typeof setTimeout>;
 
   nextStep() {
     if (this.currentStep < this.totalSteps) {
@@ -99,6 +102,22 @@ export class AppComponent {
       this.statusMessage = 'El chat fue cerrado. Puedes abrir uno nuevo cuando quieras.';
     });
 
+    this.hubConnection.on('typingChanged', (payload: { sessionId: string; senderType: string; isTyping: boolean }) => {
+      if (payload.sessionId !== this.sessionId || payload.senderType === 'applicant') {
+        return;
+      }
+
+      this.isAdvisorTyping = payload.isTyping;
+      if (payload.isTyping) {
+        if (this.stopTypingTimeout) {
+          clearTimeout(this.stopTypingTimeout);
+        }
+        this.stopTypingTimeout = setTimeout(() => {
+          this.isAdvisorTyping = false;
+        }, 3000);
+      }
+    });
+
     await this.hubConnection.start();
     await this.hubConnection.invoke('JoinChatRoom', `chat-${this.sessionId}`);
 
@@ -135,5 +154,26 @@ export class AppComponent {
       })
     });
     this.message = '';
+    await this.sendTyping(false);
+  }
+
+  onMessageInput() {
+    this.sendTyping(true);
+
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+
+    this.typingTimeout = setTimeout(() => {
+      this.sendTyping(false);
+    }, 1200);
+  }
+
+  async sendTyping(isTyping: boolean) {
+    if (!this.sessionId || !this.hubConnection) {
+      return;
+    }
+
+    await this.hubConnection.invoke('SendTyping', this.sessionId, 'applicant', isTyping);
   }
 }

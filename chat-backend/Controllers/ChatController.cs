@@ -26,6 +26,8 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
             session.Id,
             session.Applicant,
             session.CreatedAt,
+            session.Status,
+            session.AssignedAdvisorId,
             statusMessage
         });
 
@@ -35,6 +37,15 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
     [Authorize]
     [HttpGet("pending")]
     public ActionResult<IReadOnlyCollection<ChatSession>> GetPendingChats() => Ok(chatService.GetPendingChats());
+
+    [Authorize]
+    [HttpGet]
+    public ActionResult<IReadOnlyCollection<ChatSession>> GetAllChats() => Ok(chatService.GetAllChats());
+
+
+    [Authorize]
+    [HttpGet("advisors")]
+    public ActionResult<IReadOnlyCollection<AdvisorState>> GetAdvisors() => Ok(chatService.GetAdvisors());
 
     [Authorize]
     [HttpPatch("advisor/active")]
@@ -69,10 +80,54 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
         var room = $"chat-{sessionId}";
         await hubContext.Clients.Group(room).SendAsync("chatTaken", new { sessionId, advisorId });
         await hubContext.Clients.Group(room).SendAsync("chatHistory", chat.Messages);
+        await hubContext.Clients.Group("advisors").SendAsync("chatUpdated", new
+        {
+            sessionId,
+            status = chat.Status.ToString(),
+            assignedAdvisorId = chat.AssignedAdvisorId
+        });
+        await hubContext.Clients.Group($"advisor-{advisorId}").SendAsync("assignmentNotification", new
+        {
+            sessionId,
+            message = "Se te asignó una nueva solicitud."
+        });
 
         return Ok(chat);
     }
 
+    [Authorize]
+    [HttpPost("{sessionId:guid}/transfer")]
+    public async Task<IActionResult> TransferChat(Guid sessionId, [FromBody] TransferChatRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.TargetAdvisorId))
+        {
+            return BadRequest("Debes indicar el asesor destino.");
+        }
+
+        var advisorName = User.FindFirstValue(ClaimTypes.Name) ?? "asesor";
+        var chat = chatService.TransferChat(sessionId, request.TargetAdvisorId, advisorName, request.Reason);
+
+        if (chat is null)
+        {
+            return NotFound("Chat no encontrado o cerrado.");
+        }
+
+        await hubContext.Clients.Group("advisors").SendAsync("chatUpdated", new
+        {
+            sessionId,
+            status = chat.Status.ToString(),
+            assignedAdvisorId = chat.AssignedAdvisorId
+        });
+
+        await hubContext.Clients.Group($"advisor-{request.TargetAdvisorId}").SendAsync("assignmentNotification", new
+        {
+            sessionId,
+            message = $"Se te asignó la solicitud {sessionId}."
+        });
+
+        await hubContext.Clients.Group($"chat-{sessionId}").SendAsync("newMessage", chat.Messages.Last());
+        return Ok(chat);
+    }
 
     [HttpPost("{sessionId:guid}/close")]
     public async Task<IActionResult> CloseChat(Guid sessionId, [FromBody] CloseChatRequest request)
@@ -94,6 +149,13 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
         });
 
         await hubContext.Clients.Group(room).SendAsync("newMessage", chat.Messages.Last());
+        await hubContext.Clients.Group("advisors").SendAsync("chatUpdated", new
+        {
+            sessionId,
+            status = chat.Status.ToString(),
+            assignedAdvisorId = chat.AssignedAdvisorId
+        });
+
         return Ok(chat);
     }
 

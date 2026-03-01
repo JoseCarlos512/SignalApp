@@ -119,3 +119,11 @@ button:disabled {
 .danger {
   background: #a3213f;
 }
+
+.typing-status {
+  margin: 0 0 6px;
+  color: #4b5563;
+  font-style: italic;
+  font-size: 13px;
+}
+

@@ -71,8 +71,11 @@
             <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
           }
         </div>
+        @if (isAdvisorTyping) {
+          <p class="typing-status">El asesor está escribiendo...</p>
+        }
 
-        <input [(ngModel)]="message" placeholder="Escribe tu mensaje" [disabled]="isChatClosed" />
+        <input [(ngModel)]="message" placeholder="Escribe tu mensaje" [disabled]="isChatClosed" (input)="onMessageInput()" />
         <div class="actions-row">
           <button (click)="sendMessage()" [disabled]="isChatClosed">Enviar</button>
           <button class="danger" (click)="closeChat()" [disabled]="isChatClosed">Cerrar chat</button>
