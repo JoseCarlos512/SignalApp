@@ -57,17 +57,30 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
 
     public ChatSession? TakeChat(Guid sessionId, string advisorId)
     {
-        var chat = dbContext.Sessions
-            .Include(s => s.Messages)
-            .FirstOrDefault(s => s.Id == sessionId);
+        // 1️⃣ Intentamos tomar el chat de forma atómica
+        var rowsAffected = dbContext.Sessions
+            .Where(s => s.Id == sessionId && s.Status == ChatStatus.Pending)
+            .ExecuteUpdate(s => s
+                .SetProperty(p => p.Status, ChatStatus.Assigned)
+                .SetProperty(p => p.AssignedAdvisorId, advisorId));
 
-        if (chat is null || chat.Status != ChatStatus.Pending)
+        // Si nadie fue actualizado → ya fue tomado
+        if (rowsAffected == 0)
         {
             return null;
         }
 
-        chat.Status = ChatStatus.Assigned;
-        chat.AssignedAdvisorId = advisorId;
+        // 2️⃣ Ahora sí lo traemos con los mensajes
+        var chat = dbContext.Sessions
+            .Include(s => s.Messages)
+            .FirstOrDefault(s => s.Id == sessionId);
+
+        if (chat is null)
+        {
+            return null;
+        }
+
+        // 3️⃣ Agregamos mensaje del sistema
         chat.Messages.Add(new ChatMessageEntity
         {
             SessionId = chat.Id,
@@ -77,21 +90,34 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         });
 
         dbContext.SaveChanges();
+
         return ToModel(chat);
     }
 
     public ChatSession? CloseChat(Guid sessionId, string closedBy, string? reason = null)
     {
+        // 1️⃣ Intento atómico de cerrar el chat
+        var rowsAffected = dbContext.Sessions
+            .Where(s => s.Id == sessionId && s.Status != ChatStatus.Closed)
+            .ExecuteUpdate(s => s
+                .SetProperty(p => p.Status, ChatStatus.Closed));
+
+        if (rowsAffected == 0)
+        {
+            return null; // ya estaba cerrado o no existe
+        }
+
+        // 2️⃣ Traemos el chat actualizado
         var chat = dbContext.Sessions
             .Include(s => s.Messages)
             .FirstOrDefault(s => s.Id == sessionId);
 
-        if (chat is null || chat.Status == ChatStatus.Closed)
+        if (chat is null)
         {
             return null;
         }
 
-        chat.Status = ChatStatus.Closed;
+        // 3️⃣ Agregamos mensaje del sistema
         chat.Messages.Add(new ChatMessageEntity
         {
             SessionId = chat.Id,
@@ -103,6 +129,7 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         });
 
         dbContext.SaveChanges();
+
         return ToModel(chat);
     }
 
