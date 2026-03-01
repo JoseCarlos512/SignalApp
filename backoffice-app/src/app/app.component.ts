@@ -81,6 +81,19 @@ export class AppComponent {
     return advisor ? `${advisor.name} (${advisor.advisorId})` : advisorId;
   }
 
+  get activeTransferAdvisors(): AdvisorState[] {
+    return this.advisors.filter((advisor) => advisor.isActive && advisor.advisorId !== this.advisorId);
+  }
+
+  advisorDisplayName(advisorId?: string): string {
+    if (!advisorId) {
+      return '-';
+    }
+
+    const advisor = this.advisors.find((item) => item.advisorId === advisorId);
+    return advisor ? `${advisor.name} (${advisor.advisorId})` : advisorId;
+  }
+
   async login() {
     this.loginError = '';
 
