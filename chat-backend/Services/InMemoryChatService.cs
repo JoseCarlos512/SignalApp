@@ -98,19 +98,34 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         return ToModel(chat);
     }
 
-    public ChatSession? TransferChat(Guid sessionId, string targetAdvisorId, string transferBy, string? reason = null)
+    public ChatSession? TransferChat(Guid sessionId, string sourceAdvisorId, string targetAdvisorId, string transferBy, string? reason = null)
     {
-        var chat = dbContext.Sessions
-            .Include(s => s.Messages)
-            .FirstOrDefault(s => s.Id == sessionId);
+        var targetAdvisorIsActive = dbContext.Advisors
+            .Any(a => a.AdvisorId == targetAdvisorId && a.IsActive);
 
-        if (chat is null || chat.Status == ChatStatus.Closed)
+        if (!targetAdvisorIsActive)
         {
             return null;
         }
 
-        chat.Status = ChatStatus.Assigned;
-        chat.AssignedAdvisorId = targetAdvisorId;
+        var rowsAffected = dbContext.Sessions
+            .Where(s => s.Id == sessionId && s.Status == ChatStatus.Assigned && s.AssignedAdvisorId == sourceAdvisorId)
+            .ExecuteUpdate(s => s
+                .SetProperty(p => p.AssignedAdvisorId, targetAdvisorId));
+
+        if (rowsAffected == 0)
+        {
+            return null;
+        }
+
+        var chat = dbContext.Sessions
+            .Include(s => s.Messages)
+            .FirstOrDefault(s => s.Id == sessionId);
+
+        if (chat is null)
+        {
+            return null;
+        }
 
         chat.Messages.Add(new ChatMessageEntity
         {

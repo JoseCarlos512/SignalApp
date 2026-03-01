@@ -1,5 +1,5 @@
 :root {
-  --bg: #f3f6fb;
+  --bg: #eef3fb;
   --card: #ffffff;
   --ink: #1f2937;
   --muted: #667085;
@@ -11,7 +11,7 @@
 body {
   margin: 0;
   font-family: Inter, Arial, sans-serif;
-  background: var(--bg);
+  background: radial-gradient(circle at top, #f8fbff 0%, var(--bg) 50%);
   color: var(--ink);
 }
 
@@ -37,6 +37,28 @@ body {
   color: var(--muted);
 }
 
+.session-user {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.user-pill {
+  background: #e0ecff;
+  color: #1d4ed8;
+  border: 1px solid #bfd6ff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+.user-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .topbar-actions {
   display: flex;
   gap: 8px;
@@ -52,6 +74,12 @@ body {
 
 .login-card {
   max-width: 420px;
+}
+
+.login-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
 }
 
 .layout {
@@ -95,6 +123,14 @@ td {
   text-align: left;
   padding: 10px;
   border-bottom: 1px solid #edf0f5;
+}
+
+tr {
+  transition: background 0.15s ease;
+}
+
+tr:hover {
+  background: #f8fbff;
 }
 
 tr.selected {
