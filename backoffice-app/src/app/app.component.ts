@@ -39,6 +39,7 @@ export class AppComponent {
   advisorId = '';
   advisorName = '';
   isActive = false;
+  loginError = '';
 
   chats: ChatSession[] = [];
   advisors: AdvisorState[] = [];
@@ -60,15 +61,44 @@ export class AppComponent {
   }
 
   get canReply(): boolean {
-    return !!this.selectedChatId && this.selectedChat?.status !== 'Closed';
+    return !!this.selectedChatId && this.selectedChat?.status === 'Assigned' && this.selectedChat?.assignedAdvisorId === this.advisorId;
+  }
+
+  get activeTransferAdvisors(): AdvisorState[] {
+    return this.advisors.filter((advisor) => advisor.isActive && advisor.advisorId !== this.advisorId);
+  }
+
+  canTakeChat(chat?: Pick<ChatSession, 'status'>): boolean {
+    return chat?.status === 'Pending';
+  }
+
+  get canTakeSelectedChat(): boolean {
+    return this.canTakeChat(this.selectedChat);
+  }
+
+  advisorDisplayName(advisorId?: string): string {
+    if (!advisorId) {
+      return '-';
+    }
+
+    const advisor = this.advisors.find((item) => item.advisorId === advisorId);
+    return advisor ? `${advisor.name} (${advisor.advisorId})` : advisorId;
   }
 
   async login() {
+    this.loginError = '';
+
     const response = await fetch(`${this.apiUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: this.username, password: this.password })
     });
+
+    if (!response.ok) {
+      this.loginError = 'No se pudo iniciar sesión. Verifica usuario y contraseña.';
+      return;
+    }
+
     const data = await response.json();
     this.token = data.token;
     this.advisorId = data.advisorId;
@@ -174,12 +204,6 @@ export class AppComponent {
     this.isCounterpartTyping = false;
     await this.hubConnection?.invoke('JoinChatRoom', `chat-${chatId}`);
 
-    const chat = this.chats.find((item) => item.id === chatId);
-    if (chat?.status === 'Pending') {
-      await this.takeChat(chatId);
-      return;
-    }
-
     await this.loadSelectedChat();
   }
 
@@ -195,6 +219,7 @@ export class AppComponent {
       return;
     }
 
+    this.notify('Tomaste el chat correctamente.');
     await this.loadSelectedChat();
     await this.loadChats();
   }
@@ -217,7 +242,9 @@ export class AppComponent {
     });
 
     if (!response.ok) {
-      this.notify('No se pudo derivar la solicitud.');
+      this.notify('No se pudo derivar la solicitud. Verifica que el chat aún te pertenezca y el destino esté activo.');
+      await this.loadChats();
+      await this.loadAdvisors();
       return;
     }
 

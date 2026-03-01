@@ -1,8 +1,15 @@
 <div class="page">
-  <header class="topbar">
+  <header class="topbar card">
     <div>
       <h1>Backoffice de Solicitudes</h1>
       <p>Gestión en vivo de chats, asignaciones y derivaciones.</p>
+      @if (token) {
+        <div class="session-user">
+          <span class="user-pill">👤 {{ advisorName }}</span>
+          <span class="user-meta">ID: {{ advisorId }}</span>
+          <span class="user-meta">Estado: {{ isActive ? 'activo' : 'inactivo' }}</span>
+        </div>
+      }
     </div>
     @if (token) {
       <div class="topbar-actions">
@@ -20,6 +27,9 @@
       <input [(ngModel)]="username" placeholder="Usuario" />
       <input [(ngModel)]="password" placeholder="Password" type="password" />
       <button (click)="login()">Ingresar</button>
+      @if (loginError) {
+        <p class="login-error">{{ loginError }}</p>
+      }
     </section>
   }
 
@@ -40,6 +50,7 @@
               <th>DNI</th>
               <th>Estado</th>
               <th>Asesor</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -52,7 +63,14 @@
                     {{ statusLabel(chat.status) }}
                   </span>
                 </td>
-                <td>{{ chat.assignedAdvisorId || '-' }}</td>
+                <td>{{ advisorDisplayName(chat.assignedAdvisorId) }}</td>
+                <td>
+                  @if (canTakeChat(chat)) {
+                    <button type="button" (click)="takeChat(chat.id); $event.stopPropagation()">Tomar chat</button>
+                  } @else {
+                    <span>-</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -78,6 +96,13 @@
             }
           </div>
 
+          @if (canTakeSelectedChat) {
+            <div class="take-chat-box">
+              <p>Este chat aún no tiene asesor asignado.</p>
+              <button type="button" (click)="takeChat(selectedChatId)">Tomar chat</button>
+            </div>
+          }
+
           <div class="composer">
             <input [(ngModel)]="message" placeholder="Escribe respuesta" [disabled]="!canReply" (input)="onMessageInput()" />
             <button (click)="sendMessage()" [disabled]="!canReply">Enviar</button>
@@ -88,12 +113,12 @@
             <h4>Derivar solicitud</h4>
             <select [(ngModel)]="transferAdvisorId">
               <option value="">Selecciona asesor destino</option>
-              @for (advisor of advisors; track advisor.advisorId) {
-                <option [value]="advisor.advisorId">{{ advisor.name }} ({{ advisor.isActive ? 'activo' : 'inactivo' }})</option>
+              @for (advisor of activeTransferAdvisors; track advisor.advisorId) {
+                <option [value]="advisor.advisorId">{{ advisor.name }} ({{ advisor.advisorId }})</option>
               }
             </select>
             <input [(ngModel)]="transferReason" placeholder="Motivo (opcional)" />
-            <button (click)="transferChat()" [disabled]="!transferAdvisorId">Derivar</button>
+            <button (click)="transferChat()" [disabled]="!transferAdvisorId || !canReply">Derivar</button>
           </div>
         }
       </article>
