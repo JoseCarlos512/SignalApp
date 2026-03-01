@@ -3,16 +3,26 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import * as signalR from '@microsoft/signalr';
 
+type ChatStatus = 'Pending' | 'Assigned' | 'Closed';
+
 interface ChatSession {
   id: string;
   applicant: { name: string; dni: string; phone: string; email: string };
   createdAt: string;
+  status: ChatStatus;
+  assignedAdvisorId?: string;
 }
 
 interface ChatMessage {
   senderType: string;
   text: string;
   sentAt: string;
+}
+
+interface AdvisorState {
+  advisorId: string;
+  name: string;
+  isActive: boolean;
 }
 
 @Component({
@@ -27,14 +37,31 @@ export class AppComponent {
   password = '123456';
   token = '';
   advisorId = '';
+  advisorName = '';
   isActive = false;
 
-  pendingChats: ChatSession[] = [];
+  chats: ChatSession[] = [];
+  advisors: AdvisorState[] = [];
   selectedChatId = '';
   messages: ChatMessage[] = [];
   message = '';
+  transferAdvisorId = '';
+  transferReason = '';
 
+  notifications: string[] = [];
+  isCounterpartTyping = false;
+
+  private typingTimeout?: ReturnType<typeof setTimeout>;
+  private stopTypingTimeout?: ReturnType<typeof setTimeout>;
   private hubConnection?: signalR.HubConnection;
+
+  get selectedChat(): ChatSession | undefined {
+    return this.chats.find((chat) => chat.id === this.selectedChatId);
+  }
+
+  get canReply(): boolean {
+    return !!this.selectedChatId && this.selectedChat?.status !== 'Closed';
+  }
 
   async login() {
     const response = await fetch(`${this.apiUrl}/api/auth/login`, {
@@ -45,8 +72,10 @@ export class AppComponent {
     const data = await response.json();
     this.token = data.token;
     this.advisorId = data.advisorId;
+    this.advisorName = data.advisorName;
     await this.connectSignalR();
-    await this.loadPendingChats();
+    await this.loadChats();
+    await this.loadAdvisors();
   }
 
   async connectSignalR() {
@@ -55,27 +84,71 @@ export class AppComponent {
       .withAutomaticReconnect()
       .build();
 
-    this.hubConnection.on('newIncomingChat', async () => this.loadPendingChats());
-    this.hubConnection.on('newMessage', (message: ChatMessage) => {
-      this.messages = [...this.messages, message];
+    this.hubConnection.on('newIncomingChat', async () => this.loadChats());
+    this.hubConnection.on('chatUpdated', async () => this.loadChats());
+    this.hubConnection.on('advisorStatusChanged', async () => this.loadAdvisors());
+
+    this.hubConnection.on('assignmentNotification', (payload: { sessionId: string; message: string }) => {
+      this.notify(payload.message);
+      this.loadChats();
+    });
+
+    this.hubConnection.on('newMessage', (chatMessage: ChatMessage) => {
+      if (this.selectedChatId) {
+        this.messages = [...this.messages, chatMessage];
+      }
+    });
+
+    this.hubConnection.on('typingChanged', (payload: { sessionId: string; senderType: string; isTyping: boolean }) => {
+      if (payload.sessionId !== this.selectedChatId || payload.senderType === 'advisor') {
+        return;
+      }
+
+      this.isCounterpartTyping = payload.isTyping;
+      if (payload.isTyping) {
+        if (this.stopTypingTimeout) {
+          clearTimeout(this.stopTypingTimeout);
+        }
+        this.stopTypingTimeout = setTimeout(() => {
+          this.isCounterpartTyping = false;
+        }, 3000);
+      }
     });
 
     this.hubConnection.on('chatClosed', async () => {
       if (this.selectedChatId) {
-        const session = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}`);
-        const data = await session.json();
-        this.messages = data.messages ?? [];
+        await this.loadSelectedChat();
+        await this.loadChats();
       }
     });
 
     await this.hubConnection.start();
   }
 
-  async loadPendingChats() {
-    const response = await fetch(`${this.apiUrl}/api/chats/pending`, {
+  async loadChats() {
+    const response = await fetch(`${this.apiUrl}/api/chats`, {
       headers: { Authorization: `Bearer ${this.token}` }
     });
-    this.pendingChats = await response.json();
+
+    this.chats = await response.json();
+  }
+
+  async loadAdvisors() {
+    const response = await fetch(`${this.apiUrl}/api/chats/advisors`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+
+    this.advisors = await response.json();
+  }
+
+  async loadSelectedChat() {
+    if (!this.selectedChatId) {
+      return;
+    }
+
+    const session = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}`);
+    const data = await session.json();
+    this.messages = data.messages ?? [];
   }
 
   async toggleActive() {
@@ -90,18 +163,67 @@ export class AppComponent {
     });
   }
 
-  async takeChat(chatId: string) {
+  async openChat(chatId: string) {
+    if (this.selectedChatId && this.selectedChatId !== chatId) {
+      await this.hubConnection?.invoke('LeaveChatRoom', `chat-${this.selectedChatId}`);
+    }
+
     this.selectedChatId = chatId;
-    await fetch(`${this.apiUrl}/api/chats/${chatId}/take`, {
+    this.transferAdvisorId = '';
+    this.transferReason = '';
+    this.isCounterpartTyping = false;
+    await this.hubConnection?.invoke('JoinChatRoom', `chat-${chatId}`);
+
+    const chat = this.chats.find((item) => item.id === chatId);
+    if (chat?.status === 'Pending') {
+      await this.takeChat(chatId);
+      return;
+    }
+
+    await this.loadSelectedChat();
+  }
+
+  async takeChat(chatId: string) {
+    const response = await fetch(`${this.apiUrl}/api/chats/${chatId}/take`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.token}` }
     });
 
-    await this.hubConnection?.invoke('JoinChatRoom', `chat-${chatId}`);
-    const session = await fetch(`${this.apiUrl}/api/chats/${chatId}`);
-    const data = await session.json();
-    this.messages = data.messages ?? [];
-    await this.loadPendingChats();
+    if (!response.ok) {
+      this.notify('Este chat ya fue tomado por otro asesor.');
+      await this.loadChats();
+      return;
+    }
+
+    await this.loadSelectedChat();
+    await this.loadChats();
+  }
+
+  async transferChat() {
+    if (!this.selectedChatId || !this.transferAdvisorId) {
+      return;
+    }
+
+    const response = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}/transfer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`
+      },
+      body: JSON.stringify({
+        targetAdvisorId: this.transferAdvisorId,
+        reason: this.transferReason || null
+      })
+    });
+
+    if (!response.ok) {
+      this.notify('No se pudo derivar la solicitud.');
+      return;
+    }
+
+    this.notify('Solicitud derivada correctamente.');
+    await this.loadSelectedChat();
+    await this.loadChats();
   }
 
   async closeChat() {
@@ -115,10 +237,8 @@ export class AppComponent {
       })
     });
 
-    const session = await fetch(`${this.apiUrl}/api/chats/${this.selectedChatId}`);
-    const data = await session.json();
-    this.messages = data.messages ?? [];
-    await this.loadPendingChats();
+    await this.loadSelectedChat();
+    await this.loadChats();
   }
 
   async sendMessage() {
@@ -133,5 +253,36 @@ export class AppComponent {
       })
     });
     this.message = '';
+    await this.sendTyping(false);
+  }
+
+  onMessageInput() {
+    this.sendTyping(true);
+
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+
+    this.typingTimeout = setTimeout(() => {
+      this.sendTyping(false);
+    }, 1200);
+  }
+
+  async sendTyping(isTyping: boolean) {
+    if (!this.selectedChatId || !this.hubConnection) {
+      return;
+    }
+
+    await this.hubConnection.invoke('SendTyping', this.selectedChatId, 'advisor', isTyping);
+  }
+
+  statusLabel(status: ChatStatus) {
+    if (status === 'Pending') return 'Pendiente';
+    if (status === 'Assigned') return 'Asignado';
+    return 'Cerrado';
+  }
+
+  private notify(message: string) {
+    this.notifications = [message, ...this.notifications].slice(0, 4);
   }
 }

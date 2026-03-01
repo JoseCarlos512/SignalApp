@@ -1,48 +1,102 @@
-<div class="container">
-  <h1>Backoffice - Bandeja de Chats</h1>
+<div class="page">
+  <header class="topbar">
+    <div>
+      <h1>Backoffice de Solicitudes</h1>
+      <p>Gestión en vivo de chats, asignaciones y derivaciones.</p>
+    </div>
+    @if (token) {
+      <div class="topbar-actions">
+        <button (click)="toggleActive()" [class.active]="isActive">
+          {{ isActive ? 'Disponible' : 'No disponible' }}
+        </button>
+        <button (click)="loadChats()">Actualizar</button>
+      </div>
+    }
+  </header>
 
   @if (!token) {
-  <div class="card">
-    <h3>Login (JWT mock)</h3>
-    <input [(ngModel)]="username" placeholder="Usuario" />
-    <input [(ngModel)]="password" placeholder="Password" type="password" />
-    <button (click)="login()">Ingresar</button>
-  </div>
+    <section class="card login-card">
+      <h3>Ingreso de asesor</h3>
+      <input [(ngModel)]="username" placeholder="Usuario" />
+      <input [(ngModel)]="password" placeholder="Password" type="password" />
+      <button (click)="login()">Ingresar</button>
+    </section>
   }
 
   @if (token) {
-  <button (click)="toggleActive()">{{ isActive ? 'Estoy activo ✅' : 'Estoy inactivo' }}</button>
-  <button (click)="loadPendingChats()">Refrescar chats</button>
-
-  <div class="grid">
-    <div class="card">
-      <h3>Chats pendientes</h3>
-      <ul>
-        @for (chat of pendingChats; track chat.id) {
-        <li>
-          <strong>{{ chat.applicant.name }}</strong> - {{ chat.applicant.dni }}
-          <button (click)="takeChat(chat.id)">Tomar chat</button>
-        </li>
-        }
-      </ul>
-    </div>
-
-    <div class="card">
-      <h3>Chat activo</h3>
-      @if (!selectedChatId) { <p>Selecciona un chat para responder.</p> }
-      @if (selectedChatId) {
-      <div class="chat-box">
-        @for (msg of messages; track msg.sentAt + msg.text) {
-        <div><strong>{{ msg.senderType }}:</strong> {{ msg.text }}</div>
-        }
-      </div>
-      <input [(ngModel)]="message" placeholder="Escribe respuesta" />
-      <div class="chat-actions">
-        <button (click)="sendMessage()">Enviar</button>
-        <button class="danger" (click)="closeChat()">Cerrar chat</button>
-      </div>
+    <section class="notifications" *ngIf="notifications.length">
+      @for (notification of notifications; track notification) {
+        <div class="notification-item">🔔 {{ notification }}</div>
       }
-    </div>
-  </div>
+    </section>
+
+    <section class="layout">
+      <article class="card requests-card">
+        <h3>Solicitudes</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Postulante</th>
+              <th>DNI</th>
+              <th>Estado</th>
+              <th>Asesor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (chat of chats; track chat.id) {
+              <tr (click)="openChat(chat.id)" [class.selected]="selectedChatId === chat.id">
+                <td>{{ chat.applicant.name }}</td>
+                <td>{{ chat.applicant.dni }}</td>
+                <td>
+                  <span class="badge" [class.pending]="chat.status === 'Pending'" [class.assigned]="chat.status === 'Assigned'" [class.closed]="chat.status === 'Closed'">
+                    {{ statusLabel(chat.status) }}
+                  </span>
+                </td>
+                <td>{{ chat.assignedAdvisorId || '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card chat-card">
+        <h3>Conversación activa</h3>
+        @if (!selectedChatId) {
+          <p>Selecciona una solicitud para comenzar.</p>
+        }
+
+        @if (selectedChatId) {
+          <div class="chat-box">
+            @for (msg of messages; track msg.sentAt + msg.text) {
+              <div class="message-row" [class.advisor]="msg.senderType === 'advisor'">
+                <strong>{{ msg.senderType }}:</strong>
+                <span>{{ msg.text }}</span>
+              </div>
+            }
+            @if (isCounterpartTyping) {
+              <div class="typing">El postulante está escribiendo...</div>
+            }
+          </div>
+
+          <div class="composer">
+            <input [(ngModel)]="message" placeholder="Escribe respuesta" [disabled]="!canReply" (input)="onMessageInput()" />
+            <button (click)="sendMessage()" [disabled]="!canReply">Enviar</button>
+            <button class="danger" (click)="closeChat()" [disabled]="!canReply">Cerrar</button>
+          </div>
+
+          <div class="transfer-box">
+            <h4>Derivar solicitud</h4>
+            <select [(ngModel)]="transferAdvisorId">
+              <option value="">Selecciona asesor destino</option>
+              @for (advisor of advisors; track advisor.advisorId) {
+                <option [value]="advisor.advisorId">{{ advisor.name }} ({{ advisor.isActive ? 'activo' : 'inactivo' }})</option>
+              }
+            </select>
+            <input [(ngModel)]="transferReason" placeholder="Motivo (opcional)" />
+            <button (click)="transferChat()" [disabled]="!transferAdvisorId">Derivar</button>
+          </div>
+        }
+      </article>
+    </section>
   }
 </div>
