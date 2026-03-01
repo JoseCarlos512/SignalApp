@@ -40,7 +40,11 @@ public class ChatController(IChatService chatService, IHubContext<ChatHub> hubCo
 
     [Authorize]
     [HttpGet]
-    public ActionResult<IReadOnlyCollection<ChatSession>> GetAllChats() => Ok(chatService.GetAllChats());
+    public ActionResult<IReadOnlyCollection<ChatSession>> GetAllChats()
+    {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        return Ok(chatService.GetAllChats(advisorId));
+    }
 
 
     [Authorize]

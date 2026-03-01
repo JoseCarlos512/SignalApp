@@ -7,7 +7,7 @@ public interface IChatService
     bool HasActiveAdvisors();
     ChatSession CreateSession(CreateChatSessionRequest request);
     IReadOnlyCollection<ChatSession> GetPendingChats();
-    IReadOnlyCollection<ChatSession> GetAllChats();
+    IReadOnlyCollection<ChatSession> GetAllChats(string advisorId);
     ChatSession? GetChat(Guid sessionId);
     ChatSession? TakeChat(Guid sessionId, string advisorId);
     ChatSession? TransferChat(Guid sessionId, string sourceAdvisorId, string targetAdvisorId, string transferBy, string? reason = null);

@@ -181,3 +181,22 @@ tr.selected {
   border-radius: 8px;
   padding: 10px;
 }
+
+
+.take-chat-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px dashed #bfd6ff;
+  border-radius: 10px;
+  background: #f7faff;
+}
+
+.take-chat-box p {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 13px;
+}

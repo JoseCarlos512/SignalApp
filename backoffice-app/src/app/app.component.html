@@ -50,6 +50,7 @@
               <th>DNI</th>
               <th>Estado</th>
               <th>Asesor</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -88,6 +89,13 @@
             }
           </div>
 
+          @if (canTakeSelectedChat) {
+            <div class="take-chat-box">
+              <p>Este chat aún no tiene asesor asignado.</p>
+              <button type="button" (click)="takeChat(selectedChatId)">Tomar chat</button>
+            </div>
+          }
+
           <div class="composer">
             <input [(ngModel)]="message" placeholder="Escribe respuesta" [disabled]="!canReply" (input)="onMessageInput()" />
             <button (click)="sendMessage()" [disabled]="!canReply">Enviar</button>
@@ -103,7 +111,7 @@
               }
             </select>
             <input [(ngModel)]="transferReason" placeholder="Motivo (opcional)" />
-            <button (click)="transferChat()" [disabled]="!transferAdvisorId">Derivar</button>
+            <button (click)="transferChat()" [disabled]="!transferAdvisorId || !canReply">Derivar</button>
           </div>
         }
       </article>

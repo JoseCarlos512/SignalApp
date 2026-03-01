@@ -61,7 +61,24 @@ export class AppComponent {
   }
 
   get canReply(): boolean {
-    return !!this.selectedChatId && this.selectedChat?.status !== 'Closed';
+    return !!this.selectedChatId && this.selectedChat?.status === 'Assigned' && this.selectedChat?.assignedAdvisorId === this.advisorId;
+  }
+
+  get activeTransferAdvisors(): AdvisorState[] {
+    return this.advisors.filter((advisor) => advisor.isActive && advisor.advisorId !== this.advisorId);
+  }
+
+  get canTakeSelectedChat(): boolean {
+    return !!this.selectedChatId && this.selectedChat?.status === 'Pending';
+  }
+
+  advisorDisplayName(advisorId?: string): string {
+    if (!advisorId) {
+      return '-';
+    }
+
+    const advisor = this.advisors.find((item) => item.advisorId === advisorId);
+    return advisor ? `${advisor.name} (${advisor.advisorId})` : advisorId;
   }
 
   get activeTransferAdvisors(): AdvisorState[] {
@@ -196,12 +213,6 @@ export class AppComponent {
     this.isCounterpartTyping = false;
     await this.hubConnection?.invoke('JoinChatRoom', `chat-${chatId}`);
 
-    const chat = this.chats.find((item) => item.id === chatId);
-    if (chat?.status === 'Pending') {
-      await this.takeChat(chatId);
-      return;
-    }
-
     await this.loadSelectedChat();
   }
 
@@ -217,6 +228,7 @@ export class AppComponent {
       return;
     }
 
+    this.notify('Tomaste el chat correctamente.');
     await this.loadSelectedChat();
     await this.loadChats();
   }

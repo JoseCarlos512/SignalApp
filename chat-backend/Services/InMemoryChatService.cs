@@ -45,8 +45,9 @@ public class InMemoryChatService(ChatDbContext dbContext) : IChatService
         .Select(ToModel)
         .ToList();
 
-    public IReadOnlyCollection<ChatSession> GetAllChats() => dbContext.Sessions
+    public IReadOnlyCollection<ChatSession> GetAllChats(string advisorId) => dbContext.Sessions
         .AsNoTracking()
+        .Where(s => s.Status == ChatStatus.Pending || s.AssignedAdvisorId == advisorId)
         .OrderByDescending(s => s.CreatedAt)
         .Include(s => s.Messages)
         .ToList()
