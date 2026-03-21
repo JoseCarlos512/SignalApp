@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "chat-backend", "chat-backend\chat-backend.csproj", "{0D84288B-2A05-0DA3-BC07-31EAF6A862E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "landing-backend", "landing-backend\landing-backend.csproj", "{896D8D4D-410C-382D-23A2-65159780AB11}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D84288B-2A05-0DA3-BC07-31EAF6A862E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D84288B-2A05-0DA3-BC07-31EAF6A862E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D84288B-2A05-0DA3-BC07-31EAF6A862E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D84288B-2A05-0DA3-BC07-31EAF6A862E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{896D8D4D-410C-382D-23A2-65159780AB11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{896D8D4D-410C-382D-23A2-65159780AB11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{896D8D4D-410C-382D-23A2-65159780AB11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{896D8D4D-410C-382D-23A2-65159780AB11}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E22AEBF4-A55F-44E7-B1EA-72E11ED97CC3}
+	EndGlobalSection
+EndGlobal

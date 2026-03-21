@@ -1,0 +1,64 @@
+# ============================================================
+# .NET
+# ============================================================
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+**/Properties/launchSettings.json
+
+# Resultados de pruebas
+TestResults/
+coverage/
+
+# Publicaciones
+publish/
+**/publish/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ============================================================
+# Angular / Node
+# ============================================================
+node_modules/
+dist/
+.angular/
+package-lock.json
+
+# ============================================================
+# Variables de entorno y secretos
+# ============================================================
+.env
+.env.*
+appsettings.Production.json
+appsettings.Staging.json
+**/appsettings.*.local.json
+secrets.json
+
+# ============================================================
+# Sistema operativo
+# ============================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ============================================================
+# IDEs
+# ============================================================
+.idea/
+.vscode/
+*.swp
+
+# ============================================================
+# Claude Code
+# ============================================================
+.claude/
